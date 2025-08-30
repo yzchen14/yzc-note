@@ -61,12 +61,10 @@
             "problemMatcher": []
         },
         {
-            "type": "npm",
-            "script": "compile",
-            "group": "build",
-            "problemMatcher": [],
-            "label": "npm: compile",
-            "detail": "npm run check-types && npm run lint && node esbuild.js"
-        }
+            "label": "compile",
+            "type": "shell",
+            "command": "npm run compile",
+            "problemMatcher": "$tsc"
+            }
     ]
 }

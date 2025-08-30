@@ -16,12 +16,14 @@
       {
         "command": "yzc-note.setRootFolder",
         "title": "Set Root Folder",
-        "category": "YZC Note"
+        "category": "YZC Note",
+        "icon": "$(folder-opened)"
       },
       {
         "command": "yzc-note.openMarkdown",
         "title": "Open Markdown",
-        "category": "YZC Note"
+        "category": "YZC Note",
+        "icon": "$(markdown)"
       },
       {
         "command": "yzc-note.refresh",
@@ -32,12 +34,26 @@
       {
         "command": "yzc-note.newNote",
         "title": "New Note",
-        "category": "YZC Note"
+        "category": "YZC Note",
+        "icon": "$(add)"
       },
       {
         "command": "yzc-note.newFolder",
         "title": "New Folder",
-        "category": "YZC Note"
+        "category": "YZC Note",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "yzc-note.renameItem",
+        "title": "Rename",
+        "category": "YZC Note",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "yzc-note.deleteItem",
+        "title": "Delete",
+        "category": "YZC Note",
+        "icon": "$(trash)"
       }
     ],
     "viewsContainers": {
@@ -56,26 +72,8 @@
           "name": "Notes",
           "contextualTitle": "YZC Note",
           "icon": "$(note)",
-          "titleActions": [
-            {
-              "command": "yzc-note.newNote",
-              "title": "New Note",
-              "icon": "$(add)",
-              "when": "view == yzc-note.explorer"
-            },
-            {
-              "command": "yzc-note.newFolder",
-              "title": "New Folder",
-              "icon": "$(new-folder)",
-              "when": "view == yzc-note.explorer"
-            },
-            {
-              "command": "yzc-note.refresh",
-              "title": "Refresh",
-              "icon": "$(refresh)",
-              "when": "view == yzc-note.explorer"
-            }
-          ]
+          "canDropMimeTypes": ["application/vnd.code.tree.yzc-note"],
+          "dragAndDropController": true
         }
       ]
     },
@@ -90,7 +88,38 @@
         "contents": "[New Note](command:yzc-note.newNote) [New Folder](command:yzc-note.newFolder)",
         "when": "yzc-note:hasRootFolder"
       }
-    ]
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "yzc-note.newNote",
+          "when": "view == yzc-note.explorer",
+          "group": "navigation"
+        },
+        {
+          "command": "yzc-note.newFolder",
+          "when": "view == yzc-note.explorer",
+          "group": "navigation"
+        },
+        {
+          "command": "yzc-note.refresh",
+          "when": "view == yzc-note.explorer",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "yzc-note.renameItem",
+          "when": "view == yzc-note.explorer && viewItem == 'file' || viewItem == 'folder'",
+          "group": "1_modification"
+        },
+        {
+          "command": "yzc-note.deleteItem",
+          "when": "view == yzc-note.explorer && viewItem == 'file' || viewItem == 'folder'",
+          "group": "1_modification"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

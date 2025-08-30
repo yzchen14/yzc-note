@@ -2,11 +2,13 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 
-class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem> {
+class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem>, vscode.TreeDragAndDropController<NoteItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<NoteItem | undefined | null | void> = new vscode.EventEmitter<NoteItem | undefined | null | void>();
     readonly onDidChangeTreeData: vscode.Event<NoteItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
     private rootPath: string | undefined;
+    dropMimeTypes = ['application/vnd.code.tree.yzc-note'];
+    dragMimeTypes = ['text/uri-list'];
 
     constructor(private context: vscode.ExtensionContext) {
         this.rootPath = this.context.globalState.get('rootPath');
@@ -25,6 +27,68 @@ class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem> {
 
     refresh(): void {
         this._onDidChangeTreeData.fire();
+    }
+
+    async handleDrag?(source: readonly NoteItem[], dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
+        dataTransfer.set('application/vnd.code.tree.yzc-note', new vscode.DataTransferItem(source));
+    }
+
+    async handleDrop(target: NoteItem | undefined, dataTransfer: vscode.DataTransfer, token: vscode.CancellationToken): Promise<void> {
+        const transferItem = dataTransfer.get('application/vnd.code.tree.yzc-note');
+        if (!transferItem) {
+            return;
+        }
+
+        const sourceItems: NoteItem[] = transferItem.value;
+        const targetPath = target?.resourceUri?.fsPath || this.rootPath;
+        
+        if (!targetPath) {
+            return;
+        }
+
+        try {
+            for (const sourceItem of sourceItems) {
+                const sourcePath = sourceItem.resourceUri.fsPath;
+                const targetItemPath = path.join(targetPath, path.basename(sourcePath));
+                
+                // Skip if trying to move to the same location
+                if (sourcePath === targetItemPath) {
+                    continue;
+                }
+
+                // Check if target already exists
+                if (await this.pathExists(targetItemPath)) {
+                    const overwrite = await vscode.window.showWarningMessage(
+                        `'${path.basename(sourcePath)}' already exists in the target location. Overwrite?`,
+                        { modal: true },
+                        'Yes', 'No'
+                    );
+                    
+                    if (overwrite !== 'Yes') {
+                        continue;
+                    }
+                }
+
+                // Move the file/folder
+                await vscode.workspace.fs.rename(
+                    vscode.Uri.file(sourcePath),
+                    vscode.Uri.file(targetItemPath),
+                    { overwrite: true }
+                );
+            }
+            this.refresh();
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to move items: ${error}`);
+        }
+    }
+
+    private async pathExists(path: string): Promise<boolean> {
+        try {
+            await vscode.workspace.fs.stat(vscode.Uri.file(path));
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     getTreeItem(element: NoteItem): vscode.TreeItem {
@@ -95,6 +159,15 @@ class NoteItem extends vscode.TreeItem {
         this.tooltip = this.label;
         this.contextValue = type;
         this.iconPath = new vscode.ThemeIcon(type === 'file' ? 'file' : 'folder');
+        
+        // Enable drag and drop
+        this.resourceUri = resourceUri;
+        this.id = resourceUri.fsPath;
+    }
+    
+    // Make the item draggable
+    get resource(): vscode.Uri {
+        return this.resourceUri;
     }
 }
 
@@ -116,9 +189,8 @@ async function createNewFile(directory: string, isFolder: boolean = false): Prom
         if (isFolder) {
             await fs.promises.mkdir(fullPath, { recursive: true });
         } else {
-            await fs.promises.writeFile(fullPath, '');
-            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(fullPath));
-            await vscode.window.showTextDocument(doc);
+            const uri = vscode.Uri.file(fullPath);
+            await vscode.commands.executeCommand('milkdown.open', uri);
         }
     } catch (error) {
         vscode.window.showErrorMessage(`Failed to create ${isFolder ? 'folder' : 'note'}: ${error}`);
@@ -128,10 +200,12 @@ async function createNewFile(directory: string, isFolder: boolean = false): Prom
 export async function activate(context: vscode.ExtensionContext) {
     const noteExplorerProvider = new NoteExplorerProvider(context);
     
-    // Register the TreeDataProvider for the explorer view
+    // Register the TreeDataProvider for the explorer view with drag and drop
     const treeView = vscode.window.createTreeView('yzc-note.explorer', {
         treeDataProvider: noteExplorerProvider,
-        showCollapseAll: true
+        showCollapseAll: true,
+        dragAndDropController: noteExplorerProvider,
+        canSelectMany: true
     });
 
     // Register commands
@@ -183,13 +257,120 @@ export async function activate(context: vscode.ExtensionContext) {
         noteExplorerProvider.refresh();
     });
 
+    // Add rename and delete commands
+    const renameItemCommand = vscode.commands.registerCommand('yzc-note.renameItem', async (item: NoteItem) => {
+        if (!item || !item.resourceUri) { 
+            vscode.window.showErrorMessage('No item selected to rename');
+            return; 
+        }
+        
+        try {
+            const oldPath = item.resourceUri.fsPath;
+            const isFile = item.type === 'file';
+            const oldName = path.basename(oldPath, isFile ? '.md' : '');
+            const dirName = path.dirname(oldPath);
+            
+            const newName = await vscode.window.showInputBox({
+                value: oldName,
+                prompt: `Enter new ${isFile ? 'note' : 'folder'} name`,
+                validateInput: (value: string) => {
+                    if (!value) { return 'Name cannot be empty'; }
+                    if (value.includes('\\') || value.includes('/')) { return 'Name cannot contain slashes'; }
+                    if (value === oldName) { return 'Please enter a new name'; }
+                    
+                    const newPath = path.join(dirName, isFile ? `${value}.md` : value);
+                    if (fs.existsSync(newPath)) {
+                        return 'A file or folder with this name already exists';
+                    }
+                    return null;
+                }
+            });
+            
+            if (!newName) { return; }
+            
+            const newPath = path.join(dirName, isFile ? `${newName}.md` : newName);
+            
+            // Close the file if it's open in the editor
+            const openEditor = vscode.window.visibleTextEditors.find(
+                editor => editor.document.uri.fsPath === oldPath
+            );
+            if (openEditor) {
+                await vscode.window.showTextDocument(openEditor.document).then(
+                    () => vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+                );
+            }
+            
+            await vscode.workspace.fs.rename(
+                vscode.Uri.file(oldPath),
+                vscode.Uri.file(newPath),
+                { overwrite: false }
+            );
+            
+            noteExplorerProvider.refresh();
+            vscode.window.showInformationMessage(`Successfully renamed to ${newName}`);
+            
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to rename: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    });
+    
+    const deleteItemCommand = vscode.commands.registerCommand('yzc-note.deleteItem', async (item: NoteItem) => {
+        if (!item || !item.resourceUri) { 
+            vscode.window.showErrorMessage('No item selected to delete');
+            return; 
+        }
+        
+        try {
+            const isFile = item.type === 'file';
+            const itemPath = item.resourceUri.fsPath;
+            const itemName = path.basename(itemPath, isFile ? '.md' : '');
+            
+            // Close the file if it's open in the editor
+            const openEditor = vscode.window.visibleTextEditors.find(
+                editor => editor.document.uri.fsPath === itemPath
+            );
+            if (openEditor) {
+                await vscode.window.showTextDocument(openEditor.document).then(
+                    () => vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+                );
+            }
+            
+            const confirm = await vscode.window.showWarningMessage(
+                `Are you sure you want to delete ${isFile ? 'note' : 'folder'} '${itemName}'?`,
+                { modal: true },
+                'Delete', 'Cancel'
+            );
+            
+            if (confirm !== 'Delete') { return; }
+            
+            await vscode.workspace.fs.delete(
+                vscode.Uri.file(itemPath), 
+                { 
+                    recursive: true, 
+                    useTrash: true 
+                }
+            );
+            
+            noteExplorerProvider.refresh();
+            vscode.window.showInformationMessage(`Successfully deleted ${isFile ? 'note' : 'folder'}`);
+            
+        } catch (error) {
+            vscode.window.showErrorMessage(
+                `Failed to delete: ${error instanceof Error ? error.message : String(error)}`
+            );
+        }
+    });
+
+    // Add commands to subscriptions
     context.subscriptions.push(
         treeView,
         setRootFolderCommand,
         refreshCommand,
         openMarkdownCommand,
         newNoteCommand,
-        newFolderCommand
+        newFolderCommand,
+        renameItemCommand,
+        deleteItemCommand
     );
 
     // Initialize with saved root path if exists

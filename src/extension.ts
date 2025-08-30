@@ -361,6 +361,21 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     });
 
+
+    const newSubFolder = vscode.commands.registerCommand('yzc-note.newSubfolder', async (item: NoteItem) => {
+        console.log(item);
+        if (!item || !item.resourceUri) { 
+            vscode.window.showErrorMessage('No item selected to delete');
+            return; 
+        }
+
+        const targetDir = item.resourceUri.fsPath;
+        console.log("Folder Path", targetDir);
+        await createNewFile(targetDir, true);
+        noteExplorerProvider.refresh();
+
+    });
+
     // Add commands to subscriptions
     context.subscriptions.push(
         treeView,
@@ -370,7 +385,8 @@ export async function activate(context: vscode.ExtensionContext) {
         newNoteCommand,
         newFolderCommand,
         renameItemCommand,
-        deleteItemCommand
+        deleteItemCommand,
+        newSubFolder
     );
 
     // Initialize with saved root path if exists

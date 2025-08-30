@@ -54,6 +54,12 @@
         "title": "Delete",
         "category": "YZC Note",
         "icon": "$(trash)"
+      },
+      {
+        "command": "yzc-note.newSubfolder",
+        "title": "New Subfolder",
+        "category": "YZC Note",
+        "icon": "$(new-folder)"
       }
     ],
     "viewsContainers": {
@@ -109,14 +115,20 @@
       ],
       "view/item/context": [
         {
+          "command": "yzc-note.newSubfolder",
+          "when": "view == yzc-note.explorer && viewItem == 'folder' || viewItem == 'folderWithContextMenu'",
+          "group": "1_modification",
+          "title": "New Subfolder"
+        },
+        {
           "command": "yzc-note.renameItem",
-          "when": "view == yzc-note.explorer && viewItem == 'file' || viewItem == 'folder'",
-          "group": "1_modification"
+          "when": "view == yzc-note.explorer && viewItem == 'file' || viewItem == 'folder' || viewItem == 'folderWithContextMenu'",
+          "group": "2_modification"
         },
         {
           "command": "yzc-note.deleteItem",
-          "when": "view == yzc-note.explorer && viewItem == 'file' || viewItem == 'folder'",
-          "group": "1_modification"
+          "when": "view == yzc-note.explorer && viewItem == 'file' || viewItem == 'folder' || viewItem == 'folderWithContextMenu'",
+          "group": "2_modification"
         }
       ]
     }

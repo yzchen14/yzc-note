@@ -28,6 +28,16 @@
         "title": "Refresh",
         "category": "YZC Note",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "yzc-note.newNote",
+        "title": "New Note",
+        "category": "YZC Note"
+      },
+      {
+        "command": "yzc-note.newFolder",
+        "title": "New Folder",
+        "category": "YZC Note"
       }
     ],
     "viewsContainers": {
@@ -44,14 +54,41 @@
         {
           "id": "yzc-note.explorer",
           "name": "Notes",
-          "contextualTitle": "YZC Note"
+          "contextualTitle": "YZC Note",
+          "icon": "$(note)",
+          "titleActions": [
+            {
+              "command": "yzc-note.newNote",
+              "title": "New Note",
+              "icon": "$(add)",
+              "when": "view == yzc-note.explorer"
+            },
+            {
+              "command": "yzc-note.newFolder",
+              "title": "New Folder",
+              "icon": "$(new-folder)",
+              "when": "view == yzc-note.explorer"
+            },
+            {
+              "command": "yzc-note.refresh",
+              "title": "Refresh",
+              "icon": "$(refresh)",
+              "when": "view == yzc-note.explorer"
+            }
+          ]
         }
       ]
     },
     "viewsWelcome": [
       {
         "view": "yzc-note.explorer",
-        "contents": "No folder opened. [Set Root Folder](command:yzc-note.setRootFolder)"
+        "contents": "[New Note](command:yzc-note.newNote) [New Folder](command:yzc-note.newFolder)\n\n[Set Root Folder](command:yzc-note.setRootFolder)",
+        "when": "!yzc-note:hasRootFolder"
+      },
+      {
+        "view": "yzc-note.explorer",
+        "contents": "[New Note](command:yzc-note.newNote) [New Folder](command:yzc-note.newFolder)",
+        "when": "yzc-note:hasRootFolder"
       }
     ]
   },

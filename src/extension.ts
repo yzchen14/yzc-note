@@ -12,10 +12,15 @@ class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem> {
         this.rootPath = this.context.globalState.get('rootPath');
     }
 
-    setRootPath(path: string | undefined) {
+    async setRootPath(path: string | undefined) {
         this.rootPath = path;
-        this.context.globalState.update('rootPath', path);
+        await this.context.globalState.update('rootPath', path);
+        await vscode.commands.executeCommand('setContext', 'yzc-note:hasRootFolder', !!path);
         this.refresh();
+    }
+
+    getRootPath(): string | undefined {
+        return this.rootPath;
     }
 
     refresh(): void {
@@ -93,7 +98,34 @@ class NoteItem extends vscode.TreeItem {
     }
 }
 
-export function activate(context: vscode.ExtensionContext) {
+async function createNewFile(directory: string, isFolder: boolean = false): Promise<void> {
+    const name = await vscode.window.showInputBox({
+        prompt: `Enter ${isFolder ? 'folder' : 'note'} name`,
+        validateInput: (value: string) => {
+            if (!value) { return 'Name cannot be empty'; }
+            if (value.includes('\\') || value.includes('/')) { return 'Name cannot contain slashes'; }
+            return null;
+        }
+    });
+
+    if (!name) { return; }
+
+    const fullPath = path.join(directory, isFolder ? name : `${name}.md`);
+    
+    try {
+        if (isFolder) {
+            await fs.promises.mkdir(fullPath, { recursive: true });
+        } else {
+            await fs.promises.writeFile(fullPath, '');
+            const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(fullPath));
+            await vscode.window.showTextDocument(doc);
+        }
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to create ${isFolder ? 'folder' : 'note'}: ${error}`);
+    }
+}
+
+export async function activate(context: vscode.ExtensionContext) {
     const noteExplorerProvider = new NoteExplorerProvider(context);
     
     // Register the TreeDataProvider for the explorer view
@@ -128,17 +160,44 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     // Add commands to subscriptions
+    // New commands
+    const newNoteCommand = vscode.commands.registerCommand('yzc-note.newNote', async (uri?: vscode.Uri) => {
+        const rootPath = noteExplorerProvider.getRootPath();
+        if (!rootPath) {
+            vscode.window.showErrorMessage('Please set a root folder first');
+            return;
+        }
+        const targetDir = uri?.fsPath || rootPath;
+        await createNewFile(targetDir, false);
+        noteExplorerProvider.refresh();
+    });
+
+    const newFolderCommand = vscode.commands.registerCommand('yzc-note.newFolder', async (uri?: vscode.Uri) => {
+        const rootPath = noteExplorerProvider.getRootPath();
+        if (!rootPath) {
+            vscode.window.showErrorMessage('Please set a root folder first');
+            return;
+        }
+        const targetDir = uri?.fsPath || rootPath;
+        await createNewFile(targetDir, true);
+        noteExplorerProvider.refresh();
+    });
+
     context.subscriptions.push(
         treeView,
         setRootFolderCommand,
         refreshCommand,
-        openMarkdownCommand
+        openMarkdownCommand,
+        newNoteCommand,
+        newFolderCommand
     );
 
     // Initialize with saved root path if exists
     const rootPath = context.globalState.get('rootPath');
     if (rootPath) {
-        noteExplorerProvider.setRootPath(rootPath as string);
+        await noteExplorerProvider.setRootPath(rootPath as string);
+    } else {
+        await vscode.commands.executeCommand('setContext', 'yzc-note:hasRootFolder', false);
     }
 }
 

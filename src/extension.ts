@@ -250,6 +250,40 @@ async function createNewFile(directory: string, isFolder: boolean = false, rootP
     }
 }
 
+
+async function moveCurrentNoteToFolder(originalPath: string, rootPath: string): Promise<string | undefined> {
+    const folders = await getSubfolders(rootPath);
+    const folderItems = [
+        { label: 'Root', description: rootPath },
+        ...folders.map(folder => ({
+            label: path.relative(rootPath, folder),
+            description: folder
+        }))
+    ];
+
+    const selected = await vscode.window.showQuickPick(folderItems, {
+        placeHolder: 'Select a folder for the new note',
+        title: 'Select Destination Folder'
+    });
+
+    if (!selected) {
+        return undefined; // User cancelled the operation
+    }
+
+    const itemName = path.basename(originalPath);
+    const targetPath = path.join(selected.description || rootPath, itemName);
+    console.log("Target Path", targetPath);
+
+    try {
+        await fs.promises.rename(originalPath, targetPath);
+        vscode.window.showInformationMessage('Note moved successfully');
+        return targetPath;
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to move note: ${error}`);
+        return undefined;
+    }    
+}
+
 export async function activate(context: vscode.ExtensionContext) {
     const noteExplorerProvider = new NoteExplorerProvider(context);
     
@@ -462,34 +496,51 @@ export async function activate(context: vscode.ExtensionContext) {
             vscode.window.showErrorMessage('No root path set');
             return;
         }
-        const folders = await getSubfolders(rootPath);
-        const folderItems = [
-            { label: 'Root', description: rootPath },
-            ...folders.map(folder => ({
-                label: path.relative(rootPath, folder),
-                description: folder
-            }))
-        ];
-
-        const selected = await vscode.window.showQuickPick(folderItems, {
-            placeHolder: 'Select a folder for the new note',
-            title: 'Select Destination Folder'
-        });
-
         const itemPath = item.resourceUri.fsPath;
-        console.log("Item Path", itemPath);
-        const itemName = path.basename(itemPath);
-        const targetPath = path.join(selected?.description || rootPath, itemName);
-        console.log("Target Path", targetPath);
+        await moveCurrentNoteToFolder(itemPath, rootPath);
+        noteExplorerProvider.refresh();
 
-        try {
-            await fs.promises.rename(itemPath, targetPath);
-            noteExplorerProvider.refresh();
-            vscode.window.showInformationMessage('Note moved successfully');
-        } catch (error) {
-            vscode.window.showErrorMessage(`Failed to move note: ${error}`);
-        }        
+
     });
+
+
+    const moveCurrentNote = vscode.commands.registerCommand('yzc-note.moveCurrentNote', async () => {
+        try {
+            console.log("[YZC-NOTE] Move current note command triggered");
+            const tab = vscode.window.tabGroups.activeTabGroup.activeTab;
+            const tabInput = tab?.input as { uri: vscode.Uri } | undefined;
+            if (!tabInput?.uri) {
+                vscode.window.showErrorMessage('No active editor found');
+                return;
+            }
+
+            const currentFilePath = tabInput.uri.fsPath;
+            console.log("Current File Path", currentFilePath);
+
+            const rootPath = noteExplorerProvider.getRootPath();
+            if (!rootPath) {
+                vscode.window.showErrorMessage('No root path set');
+                return;
+            }
+            
+            const targetPath = await moveCurrentNoteToFolder(currentFilePath, rootPath);
+            if (!targetPath) {
+                return; // User cancelled the operation
+            }
+
+            if (tab) {
+                await vscode.window.tabGroups.close(tab, true);
+                await vscode.commands.executeCommand('milkdown.open', vscode.Uri.file(targetPath));
+            }
+            
+            noteExplorerProvider.refresh();
+
+        } catch (error) {
+            console.error("[YZC-NOTE] Error in moveCurrentNote:", error);
+        }
+    });
+
+
 
     // Add commands to subscriptions
     context.subscriptions.push(
@@ -503,7 +554,8 @@ export async function activate(context: vscode.ExtensionContext) {
         deleteItemCommand,
         newSubFolder,
         newSubNote,
-        moveNote
+        moveNote,
+        moveCurrentNote
     );
 
     // Initialize with saved root path if exists

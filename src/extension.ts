@@ -455,6 +455,42 @@ export async function activate(context: vscode.ExtensionContext) {
 
     });
 
+
+    const moveNote = vscode.commands.registerCommand('yzc-note.moveNote', async (item: NoteItem) => {
+        const rootPath = noteExplorerProvider.getRootPath();
+        if (!rootPath) {
+            vscode.window.showErrorMessage('No root path set');
+            return;
+        }
+        const folders = await getSubfolders(rootPath);
+        const folderItems = [
+            { label: 'Root', description: rootPath },
+            ...folders.map(folder => ({
+                label: path.relative(rootPath, folder),
+                description: folder
+            }))
+        ];
+
+        const selected = await vscode.window.showQuickPick(folderItems, {
+            placeHolder: 'Select a folder for the new note',
+            title: 'Select Destination Folder'
+        });
+
+        const itemPath = item.resourceUri.fsPath;
+        console.log("Item Path", itemPath);
+        const itemName = path.basename(itemPath);
+        const targetPath = path.join(selected?.description || rootPath, itemName);
+        console.log("Target Path", targetPath);
+
+        try {
+            await fs.promises.rename(itemPath, targetPath);
+            noteExplorerProvider.refresh();
+            vscode.window.showInformationMessage('Note moved successfully');
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to move note: ${error}`);
+        }        
+    });
+
     // Add commands to subscriptions
     context.subscriptions.push(
         treeView,
@@ -466,7 +502,8 @@ export async function activate(context: vscode.ExtensionContext) {
         renameItemCommand,
         deleteItemCommand,
         newSubFolder,
-        newSubNote
+        newSubNote,
+        moveNote
     );
 
     // Initialize with saved root path if exists

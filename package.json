@@ -14,6 +14,12 @@
   "contributes": {
     "commands": [
       {
+        "command": "yzc-note.moveNote",
+        "title": "Move Note",
+        "category": "YZC Note",
+        "icon": "$(move)"
+      },
+      {
         "command": "yzc-note.setRootFolder",
         "title": "Set Root Folder",
         "category": "YZC Note",
@@ -140,6 +146,11 @@
         {
           "command": "yzc-note.deleteItem",
           "when": "view == yzc-note.explorer && viewItem == 'file' || viewItem == 'folder' || viewItem == 'folderWithContextMenu'",
+          "group": "2_modification"
+        },
+        {
+          "command": "yzc-note.moveNote",
+          "when": "view == yzc-note.explorer && viewItem == 'file' || viewItem == 'folderWithContextMenu'",
           "group": "2_modification"
         }
       ]

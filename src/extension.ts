@@ -12,6 +12,13 @@ class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem>, vscode.
 
     constructor(private context: vscode.ExtensionContext) {
         this.rootPath = this.context.globalState.get('rootPath');
+        if (this.rootPath) {
+            vscode.workspace.updateWorkspaceFolders(
+                vscode.workspace.workspaceFolders?.length ?? 0,
+                null,
+                { uri: vscode.Uri.file(this.rootPath), name: "My Notes" }
+            );
+        }
     }
 
     async setRootPath(path: string | undefined) {

@@ -60,6 +60,12 @@
         "title": "New Subfolder",
         "category": "YZC Note",
         "icon": "$(new-folder)"
+      },
+      {
+        "command": "yzc-note.newSubNote",
+        "title": "New Subnote",
+        "category": "YZC Note",
+        "icon": "$(new-folder)"
       }
     ],
     "viewsContainers": {
@@ -119,6 +125,12 @@
           "when": "view == yzc-note.explorer && viewItem == 'folder' || viewItem == 'folderWithContextMenu'",
           "group": "1_modification",
           "title": "New Subfolder"
+        },
+        {
+          "command": "yzc-note.newSubNote",
+          "when": "view == yzc-note.explorer && viewItem == 'folder' || viewItem == 'folderWithContextMenu'",
+          "group": "1_modification",
+          "title": "New Subnote"
         },
         {
           "command": "yzc-note.renameItem",

@@ -184,11 +184,15 @@ async function createNewFile(directory: string, isFolder: boolean = false): Prom
     if (!name) { return; }
 
     const fullPath = path.join(directory, isFolder ? name : `${name}.md`);
-    
+    console.log("New Full path", fullPath);
+
     try {
         if (isFolder) {
             await fs.promises.mkdir(fullPath, { recursive: true });
         } else {
+            // Create an empty markdown file
+            await fs.promises.writeFile(fullPath, '', 'utf8');
+            // Open the file with VSCode's default editor
             const uri = vscode.Uri.file(fullPath);
             await vscode.commands.executeCommand('milkdown.open', uri);
         }
@@ -363,9 +367,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 
     const newSubFolder = vscode.commands.registerCommand('yzc-note.newSubfolder', async (item: NoteItem) => {
-        console.log(item);
         if (!item || !item.resourceUri) { 
-            vscode.window.showErrorMessage('No item selected to delete');
+            vscode.window.showErrorMessage('No folder selected');
             return; 
         }
 
@@ -373,6 +376,13 @@ export async function activate(context: vscode.ExtensionContext) {
         console.log("Folder Path", targetDir);
         await createNewFile(targetDir, true);
         noteExplorerProvider.refresh();
+
+    });
+
+    const newSubNote = vscode.commands.registerCommand('yzc-note.newSubNote', async (item: NoteItem) =>{
+        const targetDir = item.resourceUri.fsPath;
+        await createNewFile(targetDir, false);
+        noteExplorerProvider.refresh();  
 
     });
 
@@ -386,7 +396,8 @@ export async function activate(context: vscode.ExtensionContext) {
         newFolderCommand,
         renameItemCommand,
         deleteItemCommand,
-        newSubFolder
+        newSubFolder,
+        newSubNote
     );
 
     // Initialize with saved root path if exists

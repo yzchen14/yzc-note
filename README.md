@@ -2,52 +2,55 @@
 
 This is the README for your extension "yzc-note". After writing up a brief description, we recommend including the following sections.
 
+# YZC Note
+
+A lightweight markdown note-taking extension for Visual Studio Code with a built-in file explorer sidebar.
+
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **File Explorer Sidebar**: Browse your markdown notes in a dedicated sidebar
+- **Markdown Support**: Open markdown files with Milkdown editor
+- **Persistent Root Folder**: Save your notes directory for quick access
+- **File Navigation**: Easily navigate through your note directories
 
-For example if there is an image subfolder under your extension project workspace:
+## Getting Started
 
-\!\[feature X\]\(images/feature-x.png\)
+1. Install the extension
+2. Click on the YZC Note icon in the activity bar
+3. Click "Set Root Folder" to select your notes directory
+4. Start creating and managing your markdown notes!
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+## Commands
+
+- `YZC Note: Set Root Folder`: Set the root folder for your notes
+- `YZC Note: Open Markdown`: Open a markdown file in the Milkdown editor
+- `YZC Note: Refresh`: Refresh the file explorer view
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- VS Code 1.75.0 or higher
+- Milkdown extension (for markdown editing)
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
 This extension contributes the following settings:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+* `yzc-note.rootPath`: The root directory for your notes (automatically set when using the "Set Root Folder" command)
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- Large directories may take a moment to load
+- Only `.md` files are currently supported
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.1.0
 
-### 1.0.0
+Initial release of YZC Note
 
-Initial release of ...
+## License
 
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
+MIT
 
 ## Following extension guidelines
 

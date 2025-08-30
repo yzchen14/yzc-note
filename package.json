@@ -1,10 +1,10 @@
 {
   "name": "yzc-note",
-  "displayName": "YZCNote",
-  "description": "Note with markdown",
-  "version": "0.0.1",
+  "displayName": "YZC Note",
+  "description": "A markdown note-taking extension with file explorer sidebar",
+  "version": "0.1.0",
   "engines": {
-    "vscode": "^1.103.0"
+    "vscode": "^1.75.0"
   },
   "categories": [
     "Other"
@@ -14,8 +14,44 @@
   "contributes": {
     "commands": [
       {
-        "command": "yzc-note.helloWorld",
-        "title": "Hello World"
+        "command": "yzc-note.setRootFolder",
+        "title": "Set Root Folder",
+        "category": "YZC Note"
+      },
+      {
+        "command": "yzc-note.openMarkdown",
+        "title": "Open Markdown",
+        "category": "YZC Note"
+      },
+      {
+        "command": "yzc-note.refresh",
+        "title": "Refresh",
+        "category": "YZC Note",
+        "icon": "$(refresh)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "yzc-note-explorer",
+          "title": "YZC Note",
+          "icon": "$(note)"
+        }
+      ]
+    },
+    "views": {
+      "yzc-note-explorer": [
+        {
+          "id": "yzc-note.explorer",
+          "name": "Notes",
+          "contextualTitle": "YZC Note"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "yzc-note.explorer",
+        "contents": "No folder opened. [Set Root Folder](command:yzc-note.setRootFolder)"
       }
     ]
   },
@@ -23,7 +59,7 @@
     "vscode:prepublish": "npm run package",
     "compile": "npm run check-types && npm run lint && node esbuild.js",
     "watch": "npm-run-all -p watch:*",
-    "watch:esbuild": "node esbuild.js --watch",
+    "watch:esbuild": "",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "package": "npm run check-types && npm run lint && node esbuild.js --production",
     "compile-tests": "tsc -p . --outDir out",
@@ -33,10 +69,15 @@
     "lint": "eslint src",
     "test": "vscode-test"
   },
+  "dependencies": {
+    "@milkdown/core": "^6.0.0",
+    "@milkdown/preset-commonmark": "^6.0.0",
+    "@milkdown/theme-nord": "^6.0.0"
+  },
   "devDependencies": {
-    "@types/vscode": "^1.103.0",
+    "@types/vscode": "^1.75.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "22.x",
+    "@types/node": "20.x",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
     "eslint": "^9.32.0",

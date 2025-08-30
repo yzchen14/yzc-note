@@ -171,7 +171,49 @@ class NoteItem extends vscode.TreeItem {
     }
 }
 
-async function createNewFile(directory: string, isFolder: boolean = false): Promise<void> {
+async function getSubfolders(rootPath: string): Promise<string[]> {
+    const folders: string[] = [];
+    try {
+        const entries = await fs.promises.readdir(rootPath, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.isDirectory()) {
+                const fullPath = path.join(rootPath, entry.name);
+                folders.push(fullPath);
+                // Get subfolders recursively
+                const subFolders = await getSubfolders(fullPath);
+                folders.push(...subFolders);
+            }
+        }
+    } catch (error) {
+        console.error('Error reading directories:', error);
+    }
+    return folders;
+}
+
+async function createNewFile(directory: string, isFolder: boolean = false, rootPath?: string): Promise<void> {
+    // If this is not a folder creation and we have a root path, show folder selection
+    if (!isFolder && rootPath) {
+        const folders = await getSubfolders(rootPath);
+        const folderItems = [
+            { label: 'Root', description: rootPath },
+            ...folders.map(folder => ({
+                label: path.relative(rootPath, folder),
+                description: folder
+            }))
+        ];
+
+        const selected = await vscode.window.showQuickPick(folderItems, {
+            placeHolder: 'Select a folder for the new note',
+            title: 'Select Destination Folder'
+        });
+
+        if (selected) {
+            directory = selected.description || directory;
+        } else {
+            return; // User cancelled
+        }
+    }
+
     const name = await vscode.window.showInputBox({
         prompt: `Enter ${isFolder ? 'folder' : 'note'} name`,
         validateInput: (value: string) => {
@@ -246,7 +288,7 @@ export async function activate(context: vscode.ExtensionContext) {
             return;
         }
         const targetDir = uri?.fsPath || rootPath;
-        await createNewFile(targetDir, false);
+        await createNewFile(targetDir, false, rootPath);
         noteExplorerProvider.refresh();
     });
 

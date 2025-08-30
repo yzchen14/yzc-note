@@ -298,9 +298,29 @@ export async function activate(context: vscode.ExtensionContext) {
             vscode.window.showErrorMessage('Please set a root folder first');
             return;
         }
-        const targetDir = uri?.fsPath || rootPath;
-        await createNewFile(targetDir, true);
-        noteExplorerProvider.refresh();
+        
+        let targetDir = uri?.fsPath || rootPath;
+        
+        // Show folder selection
+        const folders = await getSubfolders(rootPath);
+        const folderItems = [
+            { label: 'Root', description: rootPath },
+            ...folders.map(folder => ({
+                label: path.relative(rootPath, folder),
+                description: folder
+            }))
+        ];
+
+        const selected = await vscode.window.showQuickPick(folderItems, {
+            placeHolder: 'Select where to create the new folder',
+            title: 'Select Parent Folder'
+        });
+
+        if (selected) {
+            targetDir = selected.description || targetDir;
+            await createNewFile(targetDir, true);
+            noteExplorerProvider.refresh();
+        }
     });
 
     // Add rename and delete commands

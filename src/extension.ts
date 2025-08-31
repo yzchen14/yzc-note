@@ -117,8 +117,6 @@ class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem>, vscode.
     private async getFilesInDirectory(directory: string): Promise<NoteItem[]> {
         try {
             const files = await fs.promises.readdir(directory, { withFileTypes: true });
-            console.log("Files", files);
-
             const timeSuffixRegex = /^(.+)_\d{10,13}\.md$/;
 
             

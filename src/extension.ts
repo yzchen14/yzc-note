@@ -117,6 +117,10 @@ class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem>, vscode.
     private async getFilesInDirectory(directory: string): Promise<NoteItem[]> {
         try {
             const files = await fs.promises.readdir(directory, { withFileTypes: true });
+            console.log("Files", files);
+
+            const timeSuffixRegex = /^(.+)_\d{10,13}\.md$/;
+
             
             const items = await Promise.all(files.map(async file => {
                 const fullPath = path.join(directory, file.name);
@@ -130,9 +134,10 @@ class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem>, vscode.
                         'folder',
                         undefined
                     );
-                } else if (file.name.endsWith('.md')) {
+                } else if (timeSuffixRegex.test(file.name)) {
+                    const baseName = file.name.replace(/_\d{10,13}\.md$/, ".md");
                     return new NoteItem(
-                        file.name,
+                        baseName,
                         vscode.TreeItemCollapsibleState.None,
                         vscode.Uri.file(fullPath),
                         'file',
@@ -232,7 +237,7 @@ async function createNewFile(directory: string, isFolder: boolean = false, rootP
 
     if (!name) { return; }
 
-    const fullPath = path.join(directory, isFolder ? name : `${name}.md`);
+    const fullPath = path.join(directory, isFolder ? name : `${name}_${Date.now()}.md`);
     console.log("New Full path", fullPath);
 
     try {

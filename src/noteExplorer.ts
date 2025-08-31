@@ -212,7 +212,7 @@ export async function createNewFile(directory: string, isFolder: boolean = false
         return;
     }
 
-    const fullPath = path.join(directory, input + (isFolder ? '' : '.md'));
+    const fullPath = path.join(directory, input + (isFolder ? '' : '_'+Date.now()+'.md'));
     
     try {
         if (isFolder) {
@@ -220,7 +220,7 @@ export async function createNewFile(directory: string, isFolder: boolean = false
         } else {
             await fs.promises.writeFile(fullPath, '');
             const uri = vscode.Uri.file(fullPath);
-            await vscode.window.showTextDocument(uri);
+            await vscode.commands.executeCommand('milkdown.open', uri);;
         }
         
         if (rootPath) {

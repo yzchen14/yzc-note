@@ -253,6 +253,130 @@ export function registerCommands(context: vscode.ExtensionContext, noteExplorerP
         }
     });
 
+    
+
+    const openLink = vscode.commands.registerCommand('yzc-note.openLink', async (url: string) => {
+        console.log("Open Link", url);
+        const rootPath = noteExplorerProvider.getRootPath();
+        if (!rootPath) {
+            vscode.window.showErrorMessage('No root path set');
+            return;
+        }
+    
+        try {
+            async function findAndOpenFile(dir: string): Promise<boolean> {
+                const files = await fs.promises.readdir(dir, { withFileTypes: true });
+                
+                for (const file of files) {
+                    const fullPath = path.join(dir, file.name);
+                    
+                    if (file.isDirectory()) {
+                        // Recursively search in subdirectories
+                        const found = await findAndOpenFile(fullPath);
+                        if (found) {return true; };
+                    } else if (file.name.includes(url)) {
+                        // Found a matching file, open it and return true
+                        await vscode.commands.executeCommand('milkdown.open', vscode.Uri.file(fullPath));
+                        return true;
+                    }
+                }
+                
+                return false; // No match found in this directory
+            }
+            
+            const rusult = await findAndOpenFile(rootPath);
+            if (!rusult) {
+                vscode.window.showInformationMessage(`No file containing the URL was found.`);
+            }
+        } catch (error) {
+            console.error('Error searching for URL:', error);
+            vscode.window.showErrorMessage('An error occurred while searching for the URL');
+        }
+    });
+
+
+    async function findMarkdownFiles(dir: string): Promise<string[]> {
+        const files: string[] = [];
+        const dirents = await fs.promises.readdir(dir, { withFileTypes: true });
+        
+        for (const dirent of dirents) {
+            const fullPath = path.join(dir, dirent.name);
+            
+            // Skip node_modules and other hidden directories
+            if (dirent.isDirectory() && !dirent.name.startsWith('.') && dirent.name !== 'node_modules') {
+                const subFiles = await findMarkdownFiles(fullPath);
+                files.push(...subFiles);
+            } else if (dirent.isFile() && dirent.name.endsWith('.md')) {
+                files.push(fullPath);
+            }
+        }
+        
+        return files;
+    }
+
+    const insertLink = vscode.commands.registerCommand('yzc-note.insertLink', async () => {
+        const rootPath = noteExplorerProvider.getRootPath();
+        if (!rootPath) {
+            vscode.window.showErrorMessage('No root folder is set. Please set a root folder first.');
+            return;
+        }
+
+        try {
+            const timeSuffixRegex = /^(.+)_(\d{10,13})\.md$/;
+            const allFiles = await findMarkdownFiles(rootPath);
+            
+            const matchedFiles = allFiles
+                .map(filePath => {
+                    const fileName = path.basename(filePath);
+                    const match = fileName.match(timeSuffixRegex);
+                    if (match && match[1] && match[2]) {
+                        return {
+                            label: match[1], // Display name without timestamp
+                            description: `Last modified: ${new Date(parseInt(match[2])).toLocaleString()}`,
+                            detail: filePath,
+                            timestamp: match[2]
+                        };
+                    }
+                    return null;
+                })
+                .filter((file): file is NonNullable<typeof file> => file !== null);
+
+            if (matchedFiles.length === 0) {
+                vscode.window.showInformationMessage('No matching markdown files found.');
+                return;
+            }
+
+            // Sort by timestamp in descending order (newest first)
+            matchedFiles.sort((a, b) => parseInt(b.timestamp) - parseInt(a.timestamp));
+
+            // Show quick pick to select a file
+            const selected = await vscode.window.showQuickPick(matchedFiles, {
+                placeHolder: 'Select a note to link to',
+                matchOnDescription: true,
+                matchOnDetail: true
+            });
+
+            if (selected) {
+                // Get the active text editor
+                const editor = vscode.window.activeTextEditor;
+                console.log("Editor", selected.detail);
+                if (editor) {
+                    // Get the relative path from root
+                    const relativePath = path.relative(rootPath, selected.detail);
+                    // Create a markdown link
+                    const linkText = `[${selected.label}](/${relativePath.replace(/\\/g, '/')})`;
+                    // Insert the link at the current cursor position
+                    await editor.edit(editBuilder => {
+                        editBuilder.insert(editor.selection.active, linkText);
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error finding markdown files:', error);
+            vscode.window.showErrorMessage('An error occurred while searching for markdown files');
+        }
+    });
+
     // Add all commands to subscriptions
     context.subscriptions.push(
         setRootFolderCommand,
@@ -265,6 +389,7 @@ export function registerCommands(context: vscode.ExtensionContext, noteExplorerP
         newSubFolder,
         newSubNote,
         moveNote,
-        moveCurrentNote
+        moveCurrentNote,
+        insertLink
     );
 }

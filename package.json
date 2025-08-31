@@ -13,6 +13,18 @@
   "contributes": {
     "commands": [
       {
+        "command": "yzc-note.insertLink",
+        "title": "Insert Link",
+        "category": "YZC Note",
+        "icon": "$(markdown)"
+      },
+      {
+        "command": "yzc-note.openLink",
+        "title": "Open Link",
+        "category": "YZC Note",
+        "icon": "$(markdown)"
+      },
+      {
         "command": "yzc-note.moveCurrentNote",
         "title": "Move Current Note",
         "category": "YZC Note",

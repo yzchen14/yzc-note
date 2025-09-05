@@ -92,6 +92,12 @@
         "title": "New Subnote",
         "category": "YZC Note",
         "icon": "$(new-folder)"
+      },
+      {
+        "command": "yzc-note.quickOpenNote",
+        "title": "Quick Open Note",
+        "category": "YZC Note",
+        "icon": "$(search)"
       }
     ],
     "viewsContainers": {

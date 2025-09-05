@@ -377,6 +377,62 @@ export function registerCommands(context: vscode.ExtensionContext, noteExplorerP
         }
     });
 
+
+    const quickOpenNoteCommand = vscode.commands.registerCommand('yzc-note.quickOpenNote', async () => {
+        const rootPath = noteExplorerProvider.getRootPath();
+        if (!rootPath) {
+            vscode.window.showErrorMessage('Please set a root folder first');
+            return;
+        }
+
+        // Get all markdown files in the root directory recursively
+        const files: string[] = [];
+        const findMarkdownFiles = (dir: string) => {
+            const items = fs.readdirSync(dir, { withFileTypes: true });
+            for (const item of items) {
+                const fullPath = path.join(dir, item.name);
+                if (item.isDirectory()) {
+                    findMarkdownFiles(fullPath);
+                } else if (item.isFile() && item.name.endsWith('.md')) {
+                    files.push(fullPath);
+                }
+            }
+        };
+
+        try {
+            findMarkdownFiles(rootPath);
+
+            if (files.length === 0) {
+                vscode.window.showInformationMessage('No markdown notes found in the repository');
+                return;
+            }
+
+            // Create quick pick items with relative paths
+            const items = files.map(file => ({
+                label: path.basename(file, '.md'),
+                description: path.relative(rootPath, path.dirname(file)) || 'Root',
+                detail: file,
+                uri: vscode.Uri.file(file)
+            }));
+
+            // Show quick pick with search functionality
+            const selected = await vscode.window.showQuickPick(items, {
+                matchOnDescription: true,
+                matchOnDetail: true,
+                placeHolder: 'Search for a note to open',
+                title: 'Quick Open Note'
+            });
+
+            if (selected) {
+                await vscode.commands.executeCommand('milkdown.open', selected.uri);
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage(`Error searching for notes: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    });
+
+
+
     // Add all commands to subscriptions
     context.subscriptions.push(
         setRootFolderCommand,
@@ -390,6 +446,7 @@ export function registerCommands(context: vscode.ExtensionContext, noteExplorerP
         newSubNote,
         moveNote,
         moveCurrentNote,
-        insertLink
+        insertLink,
+        quickOpenNoteCommand
     );
 }

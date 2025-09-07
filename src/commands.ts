@@ -358,18 +358,9 @@ export function registerCommands(context: vscode.ExtensionContext, noteExplorerP
 
             if (selected) {
                 // Get the active text editor
-                const editor = vscode.window.activeTextEditor;
-                console.log("Editor", selected.detail);
-                if (editor) {
-                    // Get the relative path from root
-                    const relativePath = path.relative(rootPath, selected.detail);
-                    // Create a markdown link
-                    const linkText = `[${selected.label}](/${relativePath.replace(/\\/g, '/')})`;
-                    // Insert the link at the current cursor position
-                    await editor.edit(editBuilder => {
-                        editBuilder.insert(editor.selection.active, linkText);
-                    });
-                }
+                const relativePath = path.relative(rootPath, selected.detail);
+                const linkText = `[${selected.label}](/${relativePath.replace(/\\/g, '/')})`;
+                vscode.commands.executeCommand('milkdown.insertText', linkText);
             }
         } catch (error) {
             console.error('Error finding markdown files:', error);
@@ -430,6 +421,7 @@ export function registerCommands(context: vscode.ExtensionContext, noteExplorerP
             vscode.window.showErrorMessage(`Error searching for notes: ${error instanceof Error ? error.message : String(error)}`);
         }
     });
+
 
 
 

@@ -59,19 +59,23 @@ export function registerInsertCommand(webviewPanel: vscode.WebviewPanel): void {
         },
     );
 
-    vscode.commands.registerCommand('milkdown.getSelection', () => {
+vscode.commands.registerCommand('milkdown.getSelection', () => {
+    return new Promise<string>((resolve) => {
         const requestId = Date.now();
+
+        // ask webview for selection
         webviewPanel.webview.postMessage({
             type: 'client-get-selection',
             id: requestId
         });
+
+        // wait for reply
         const disposable = webviewPanel.webview.onDidReceiveMessage(message => {
             if (message.type === 'getTextResponse' && message.id === requestId) {
-                disposable.dispose(); // stop listening once done
-                return message.text;
+                disposable.dispose();
+                resolve(message.text); // ✅ resolve Promise with result
             }
         });
-
-
-    })
+    });
+});
 }

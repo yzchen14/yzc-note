@@ -98,6 +98,12 @@
         "title": "Quick Open Note",
         "category": "YZC Note",
         "icon": "$(search)"
+      },
+      {
+        "command": "yzc-note.askAIQuestion",
+        "title": "Ask AI Question",
+        "category": "YZC Note",
+        "icon": "$(search)"
       }
     ],
     "viewsContainers": {

@@ -423,6 +423,29 @@ export function registerCommands(context: vscode.ExtensionContext, noteExplorerP
     });
 
 
+    const askAIQuestionCommand = vscode.commands.registerCommand('yzc-note.askAIQuestion', async () => {
+        const text = await vscode.commands.executeCommand('milkdown.getSelection');
+        if (!text) {
+            vscode.window.showInformationMessage('No text selected');
+            return;
+        };
+
+        console.log("Selected Text", text);
+
+        const response = await vscode.window.showInputBox({
+            prompt: 'Ask AI Question',
+            ignoreFocusOut: true,
+        });
+
+        if (!response) {
+            vscode.window.showInformationMessage('No question asked');
+            return;
+        }
+        
+        console.log("Question", response);
+    });
+
+
 
 
     // Add all commands to subscriptions

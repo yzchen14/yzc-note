@@ -30,6 +30,12 @@ function main() {
                 editor.getSelection(message.id);
                 return;
             }
+            case 'client-paste-plain': {
+                navigator.clipboard.readText().then((text) => {
+                    editor.pastePlain(text);
+                });
+                return;
+            }
         }
     });
 }

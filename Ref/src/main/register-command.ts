@@ -78,4 +78,13 @@ vscode.commands.registerCommand('milkdown.getSelection', () => {
         });
     });
 });
+
+
+vscode.commands.registerCommand('milkdown.pastePlain', () => {
+    webviewPanel.webview.postMessage({
+        type: 'client-paste-plain',
+    });
+});
+
+
 }

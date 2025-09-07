@@ -69,6 +69,11 @@
                 "command": "milkdown.getSelection",
                 "title": "Get Selection",
                 "category": "Milkdown"
+            },
+            {
+                "command": "milkdown.pastePlain",
+                "title": "Paste Plain",
+                "category": "Milkdown"
             }
         ],
         "keybindings": [

@@ -128,6 +128,19 @@ export class EditorManager {
         });
     };
 
+
+    pastePlain = (text: string): boolean => {
+        if (!this.editor) return false;
+        return this.editor.action((ctx) => {
+            const view = ctx.get(editorViewCtx);
+            const state = view.state;
+            const { from, to } = state.selection;
+            // Replace any selected text with the new text
+            view.dispatch(state.tr.insertText(text, from, to));
+            return true;
+        });
+    }
+
     getSelection = (id: number) => {
         if (!this.editor) return '';
         return this.editor.action((ctx) => {
@@ -143,4 +156,5 @@ export class EditorManager {
             return true;
         });
     };
+    
 }

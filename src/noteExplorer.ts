@@ -115,6 +115,7 @@ export class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem>, 
         try {
             const files = await fs.promises.readdir(directory, { withFileTypes: true });
             const timeSuffixRegex = /^(.+)_\d{10,13}\.md$/;
+            const taskFileRegex = /^\[TASK\]\[(Open|Pending|Closed)\](.+?)(_\d{10,13})?\.md$/i;
 
             const items = await Promise.all(files.map(async file => {
                 const fullPath = path.join(directory, file.name);
@@ -125,11 +126,33 @@ export class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem>, 
                         file.name,
                         vscode.TreeItemCollapsibleState.Collapsed,
                         vscode.Uri.file(fullPath),
-                        'folder',
-                        undefined
+                        'folder'
                     );
-                } else if (timeSuffixRegex.test(file.name)) {
-                    const baseName = file.name.replace(/_\d{10,13}\.md$/, ".md");
+                } 
+                
+                // Check if it's a task file
+                const taskMatch = file.name.match(taskFileRegex);
+                if (taskMatch) {
+                    const [, status, baseName] = taskMatch;
+                    const displayName = baseName.startsWith('_') ? baseName.substring(1) : baseName;
+                    return new NoteItem(
+                        displayName,
+                        vscode.TreeItemCollapsibleState.None,
+                        vscode.Uri.file(fullPath),
+                        'file',
+                        {
+                            command: 'yzc-note.openMarkdown',
+                            title: 'Open Markdown',
+                            arguments: [vscode.Uri.file(fullPath)]
+                        },
+                        true, // isTask
+                        status as 'Open' | 'Pending' | 'Closed' // taskStatus
+                    );
+                }
+                
+                // Handle regular time-suffixed files
+                if (timeSuffixRegex.test(file.name)) {
+                    const baseName = file.name.replace(/_(\d{10,13})\.md$/, '.md');
                     return new NoteItem(
                         baseName,
                         vscode.TreeItemCollapsibleState.None,
@@ -142,6 +165,7 @@ export class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem>, 
                         }
                     );
                 }
+                
                 return null;
             }));
 
@@ -154,17 +178,38 @@ export class NoteExplorerProvider implements vscode.TreeDataProvider<NoteItem>, 
 }
 
 export class NoteItem extends vscode.TreeItem {
+    public readonly isTask: boolean;
+    public readonly taskStatus?: 'Open' | 'Pending' | 'Closed';
+
     constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
         public readonly resourceUri: vscode.Uri,
         public readonly type: 'file' | 'folder',
-        public readonly command?: vscode.Command
+        public readonly command?: vscode.Command,
+        isTask: boolean = false,
+        taskStatus?: 'Open' | 'Pending' | 'Closed'
     ) {
         super(label, collapsibleState);
+        this.isTask = isTask;
+        this.taskStatus = taskStatus;
         this.tooltip = this.label;
         this.contextValue = type;
-        this.iconPath = new vscode.ThemeIcon(type === 'file' ? 'file' : 'folder');
+        
+        // Set icon based on type and task status
+        if (type === 'folder') {
+            this.iconPath = new vscode.ThemeIcon('folder');
+        } else if (isTask && taskStatus) {
+            // Use different icons for different task statuses
+            const iconMap = {
+                'Open': 'circle-outline',
+                'Pending': 'watch',
+                'Closed': 'check'
+            };
+            this.iconPath = new vscode.ThemeIcon(iconMap[taskStatus]);
+        } else {
+            this.iconPath = new vscode.ThemeIcon('file');
+        }
         
         this.resourceUri = resourceUri;
         this.id = resourceUri.fsPath;

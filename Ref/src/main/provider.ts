@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { join } from 'path';
 import { registerCommand, registerInsertCommand } from './register-command';
 import { getHtmlTemplateForWebView } from './template.html';
-
+ 
 export class MilkdownEditorProvider implements vscode.CustomTextEditorProvider {
     public static readonly viewType = 'milkdown.editor';
     public static register(context: vscode.ExtensionContext): vscode.Disposable {

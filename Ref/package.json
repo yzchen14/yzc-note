@@ -37,6 +37,16 @@
                     }
                 ],
                 "priority": "option"
+            },
+            {
+                "viewType": "vditor.editor",
+                "displayName": "Vditor Editor",
+                "selector": [
+                    {
+                        "filenamePattern": "*.md"
+                    }
+                ],
+                "priority": "option"
             }
         ],
         "menus": {
@@ -44,6 +54,11 @@
                 {
                     "when": "resourceLangId == markdown",
                     "command": "milkdown.open",
+                    "group": "navigation"
+                },
+                {
+                    "when": "resourceLangId == markdown",
+                    "command": "vditor.open",
                     "group": "navigation"
                 }
             ],
@@ -60,7 +75,13 @@
                 "command": "milkdown.open",
                 "title": "Open with Milkdown",
                 "category": "Milkdown"
-            },{
+            },
+            {
+                "command": "vditor.open",
+                "title": "Open with Vditor",
+                "category": "Milkdown"
+            },
+            {
                 "command": "milkdown.insertText",
                 "title": "Insert Text",
                 "category": "Milkdown"
@@ -243,5 +264,8 @@
         "tsup": "^8.3.6",
         "typescript": "^5.6.2"
     },
-    "packageManager": "pnpm@10.15.0"
+    "packageManager": "pnpm@10.15.0",
+    "dependencies": {
+        "vditor": "^3.11.2"
+    }
 }

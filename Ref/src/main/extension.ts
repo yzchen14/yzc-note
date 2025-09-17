@@ -1,6 +1,7 @@
 /* Copyright 2021, Milkdown by Mirone.*/
 import type * as vscode from 'vscode';
 import { MilkdownEditorProvider } from './provider';
+import { VditorEditorProvider } from './provider_vditor';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -10,6 +11,7 @@ export function activate(context: vscode.ExtensionContext) {
     // console.log('Extension "milkdown" is now active!');
 
     context.subscriptions.push(MilkdownEditorProvider.register(context));
+    context.subscriptions.push(VditorEditorProvider.register(context));
 }
 
 // this method is called when your extension is deactivated

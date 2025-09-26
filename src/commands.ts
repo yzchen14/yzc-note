@@ -27,7 +27,7 @@ export function registerCommands(context: vscode.ExtensionContext, noteExplorerP
     // Open markdown command
     const openMarkdownCommand = vscode.commands.registerCommand('yzc-note.openMarkdown', (uri: vscode.Uri) => {
         if (uri) {
-            vscode.commands.executeCommand('milkdown.open', uri);
+            vscode.commands.executeCommand('markdown-editor.openEditor', uri);
         }
     });
 
